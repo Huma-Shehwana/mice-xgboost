@@ -1,0 +1,102 @@
+---
+title: "Imputation_results_1"
+author: "Huma Shehwana"
+date: "2024-03-06"
+output: html_document
+---
+
+# Data 
+## Model 
+sigma <- matrix(data = c(1, 0.7, 0.7, 1), 
+                                ncol = 2)
+
+simdata <- replicate(n = Num_ds, 
+                      expr = mvtnorm::rmvnorm(n = 1000, 
+                                             mean = c(8, 3), 
+                                             sigma = sigma) %>% 
+                      as_tibble() %>% # make into a tibble
+                      rename(x = V1, z = V2) %>% # rename columns
+                      mutate(y = 6 * x + 3 * z + rnorm(1000)), # add y
+                      simplify = FALSE) # keep as list of generated sets
+                      
+                      
+                      
+Number of datasets = 10
+
+missing value proportion = 20%, 30%, 40%, 50%, 60%, 70%, 80%, 90%
+
+
+## Mice default setting
+```{r setup, include=FALSE}
+library(DT)
+load("MI_default.RData")
+eval_default
+```
+
+
+## Mice CART algorithm
+
+```{r }
+load("MI_CART.RData")
+eval_CART
+
+
+```
+
+
+## Mice RF algorithm
+
+```{r }
+load("MI_RF.RData")
+eval_RF
+
+```
+
+
+## XGBoost default parameter with subsampling
+
+```{r }
+load("MI_xgb.RData")
+eval_xgb
+```
+
+```{r , echo = FALSE, message=FALSE, fig.align='center', out.width="100%", out.height=500}
+knitr::include_graphics("/Users/Shehw001/Documents/GitHub/mice/Training_test_XGBDefault_subsample70.pdf")
+```
+
+## XGBoost default parameter without subsampling
+
+```{r }
+load("MI_xgb_nosub.RData")
+eval_xgb_nosub
+```
+
+```{r , echo = FALSE, message=FALSE, fig.align='center', out.width="100%", out.height=500}
+knitr::include_graphics("/Users/Shehw001/Documents/GitHub/mice/Training_test_XGBDefault_nosub.pdf")
+```
+
+
+## XGBoost bayesian optimization of hyperparameters  - using a random vairable
+
+```{r }
+load("MI_xgb_param_random_maxit5.RData")
+eval_xgb_param_random_maxit5
+```
+
+```{r , echo = FALSE, message=FALSE, fig.align='center', out.width="100%", out.height=500}
+knitr::include_graphics("/Users/Shehw001/Documents/GitHub/mice/Training_test_XGB_param_random_maxit5.pdf")
+```
+
+
+
+## XGBoost bayesian optimization of hyperparameters  - using all variable
+
+```{r }
+load("MI_xgb_param_all_maxit5.RData")
+eval_xgb_param_all_maxit5b
+```
+
+```{r , echo = FALSE, message=FALSE, fig.align='center', out.width="100%", out.height=500}
+knitr::include_graphics("/Users/Shehw001/Documents/GitHub/mice/Training_test_XGB_param_all_maxit5.pdf")
+```
+
