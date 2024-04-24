@@ -43,7 +43,8 @@ Authors@R: c(person("Stef", "van Buuren", role = c("aut","cre"),
     email = "h.i.oberman@uu.nl"))
 Maintainer: Stef van Buuren <stef.vanbuuren@tno.nl>
 Depends:
-    R (>= 2.10.0)
+    R (>= 2.10.0),
+    rBayesianOptimization
 Imports:
     broom,
     dplyr,
@@ -64,7 +65,9 @@ Imports:
     xgboost,
     ParBayesianOptimization,
     doParallel,
-    future
+    future,
+    mlrMBO,
+    smoof
 Suggests:
     broom.mixed,
     furrr,

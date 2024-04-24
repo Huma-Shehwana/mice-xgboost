@@ -27,7 +27,7 @@ missing value proportion = 20%, 30%, 40%, 50%, 60%, 70%, 80%, 90%
 
 
 ## Mice default setting
-```{r setup, include=FALSE}
+```{r setup}
 library(DT)
 load("MI_default.RData")
 eval_default

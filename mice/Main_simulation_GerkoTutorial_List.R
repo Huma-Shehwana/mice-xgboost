@@ -640,14 +640,10 @@ mice_results_xgb_param_all_maxit5 <- map2(missing_MAR_list, all_param_set, funct
   map2(data_inner, params_inner, function(data_single, params_single) {
     mice(data_single, m = m, method = "xgb", maxit = maxit,xgb.params =  params_single$parameter, print = FALSE)
   })})
-totalTime_xgb_ap_mice <- Sys.time() - t1_xgb_ap_mice
-
-
-save(mice_results_xgb_param_all_maxit5,file =  "MI_xgb_param_all_maxit5.RData")
 
 
 
-eval_xgb_param_all_maxit5 <- mice_results_xgb_param_all_maxit5 %>% 
+eval_xgb_param_all_maxit5b <- mice_results_xgb_param_all_maxit5 %>% 
   furrr::future_map(function(mat_list) {
     lapply(mat_list, function(mat) {
       complete(mat, "all") %>% # create a list of completed data sets
@@ -661,6 +657,10 @@ eval_xgb_param_all_maxit5 <- mice_results_xgb_param_all_maxit5 %>%
                width = conf.high - conf.low) %>% # bias
         column_to_rownames("term")}) %>% # `term` as rownames
       Reduce("+", .) / Num_ds})
+
+save(eval_xgb_param_all_maxit5b,file =  "MI_xgb_param_all_maxit5.RData")
+totalTime_xgb_ap_mice <- Sys.time() - t1_xgb_ap_mice
+
 
 
 ########################################################################

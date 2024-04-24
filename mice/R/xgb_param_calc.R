@@ -1,22 +1,13 @@
 
 
-xgb_param_calc<-function(data,response = NULL, select_features=NULL, num_cores = 6){
-  
-  
-  library(xgboost)
-  library(tidyverse)
-  library(mlrMBO)
-  library(rBayesianOptimization) 
-  
-  
-  ##############################################################################
-  
+xgb_param_calc<-function(data,response = NULL, select_features=NULL, num_cores = -1, iter=50){
   
 
   
-  par_opt <- function(cc.data, training_features, response_var, nfold = 5, seedval = 12345, early_stopping_rounds = 20, nround = 200){
+  par_opt <- function(cc.data, training_features, response_var, nfold = 5, seedval = seed, early_stopping_rounds = 20, nround = 200){
     
     p <- length(training_features) + 1
+    
     if (p == 2) {
       obs.data <- Matrix::sparse.model.matrix(reformulate(training_features, response_var), data = cc.data)
     } else {
@@ -31,41 +22,42 @@ xgb_param_calc<-function(data,response = NULL, select_features=NULL, num_cores =
                                             nfolds= nfold,
                                             seed= seedval)
     
+    
     obj.fun  <- smoof::makeSingleObjectiveFunction(
-      name = "xgb_cv_bayes",
-      fn =   function(x){
-        set.seed(seedval)
-        cv <- xgb.cv(params = list(
-          booster = "gbtree",
-          eta = x["eta"],
-          max_depth = x["max_depth"],
-          min_child_weight = x["min_child_weight"],
-          gamma = x["gamma"],
-          alpha = x["alpha"],
-          lambda = x["lambda"],
-          objective = 'reg:squarederror', 
-          eval_metric     = "mape"),
-          data = dtrain,
-          nround = nround,
-          early_stopping_rounds = early_stopping_rounds,
-          folds = cv_folds,
-          prediction = TRUE,
-          maximize = FALSE,
-          showsd = TRUE,
-          verbose = 0)
+                          name = "xgb_cv_bayes",
+                          fn =   function(x){
+                                            set.seed(seedval)
+                                            cv <- xgb.cv(params = list(
+                                                        booster = "gbtree",
+                                                        eta = x["eta"],
+                                                        max_depth = x["max_depth"],
+                                                        min_child_weight = x["min_child_weight"],
+                                                        gamma = x["gamma"],
+                                                        alpha = x["alpha"],
+                                                        lambda = x["lambda"],
+                                                        objective = 'reg:squarederror', 
+                                                        eval_metric = "mape"),
+                                                        data = dtrain,
+                                                        nround = nround,
+                                                        early_stopping_rounds = early_stopping_rounds,
+                                                        folds = cv_folds,
+                                                        prediction = TRUE,
+                                                        maximize = FALSE,
+                                                        showsd = TRUE,
+                                                        verbose = 0)
         
-        min(cv$evaluation_log[, 'test_mape_mean'])
-      },
-      par.set = makeParamSet(
-        makeNumericParam("eta",lower = 0.001, upper = 1),
-        makeNumericParam("alpha",lower = 0, upper = 100),
-        makeNumericParam("lambda",lower = 0, upper = 100),
-        makeNumericParam("gamma",lower = 0,upper = 10),
-        makeIntegerParam("max_depth",lower= 2,upper = 20),
-        makeIntegerParam("min_child_weight", lower= 0,upper = 50)
-      ),
-      minimize = TRUE
-    )
+                                            min(cv$evaluation_log[, 'test_mape_mean'])
+                                          },
+                          par.set = makeParamSet(
+                                        makeNumericParam("eta",lower = 0.001, upper = 1),
+                                        makeNumericParam("alpha",lower = 0, upper = 100),
+                                        makeNumericParam("lambda",lower = 0, upper = 100),
+                                        makeNumericParam("gamma",lower = 0,upper = 10),
+                                        makeIntegerParam("max_depth",lower= 2,upper = 20),
+                                        makeIntegerParam("min_child_weight", lower= 0,upper = 50)
+                                        ),
+                        minimize = TRUE
+                        )
     
     
     set.seed(seedval)
@@ -74,19 +66,17 @@ xgb_param_calc<-function(data,response = NULL, select_features=NULL, num_cores =
                          par.set = getParamSet(obj.fun), 
                          fun = lhs::randomLHS) 
     
-    control = setMBOControlTermination(control, iters = 50)
+    control = setMBOControlTermination(control, iters = iter)
     run = mbo(fun = obj.fun, 
               control = control, 
               design = des)
     
-    
-    
-    
+
     plot_fig<-run$opt.path$env$path  %>% 
-      mutate(Round = row_number()) %>% ggplot(aes(x= Round, y= y)) + 
-      geom_point() +
-      labs(title = sprintf("Response Variable: %s , Features: %s", response_var, paste(training_features,collapse = ",")))+
-      ylab("MAPE") + theme(plot.title = element_text(hjust = 0.5))
+              mutate(Round = row_number()) %>% ggplot(aes(x= Round, y= y)) + 
+              geom_point() +
+              labs(title = sprintf("Response Variable: %s , Features: %s", response_var, paste(training_features,collapse = ",")))+
+              ylab("MAPE") + theme(plot.title = element_text(hjust = 0.5))
     
 
     best_solution <- run$opt.path$env$path[which.min(run$opt.path$env$path$y),]
@@ -112,9 +102,9 @@ xgb_param_calc<-function(data,response = NULL, select_features=NULL, num_cores =
   }
   
   
-  #cc.data <- data[complete.cases(data), ]
+  cc.data <- data[complete.cases(data), ]
   
-  cc.data <- data
+  #cc.data <- data
   
   Names <- colnames(cc.data)
   Types <- as.vector(apply(cc.data,2,class))
